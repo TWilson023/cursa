@@ -28,6 +28,7 @@ final class OverlayCoordinator {
 
             self.toolbarController = ToolbarPanelController(
                 config: config,
+                appState: appState,
                 onStart: { [weak self] in
                     self?.startPlayback(appState: appState)
                 },

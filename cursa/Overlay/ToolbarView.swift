@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ToolbarView: View {
     var config: PresetConfiguration
+    var appState: AppState
     var onStart: () -> Void
     var onCancel: () -> Void
 
@@ -17,6 +18,10 @@ struct ToolbarView: View {
             }
 
             speedField
+
+            Divider()
+
+            startingClickField
 
             Divider()
 
@@ -97,6 +102,19 @@ struct ToolbarView: View {
             get: { config.speed },
             set: { config.speed = max(0.1, $0) }
         ), step: 0.5, format: .number.precision(.fractionLength(1)), unit: "sec")
+    }
+
+    private var startingClickField: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Starting click", isOn: Binding(
+                get: { appState.startingClick },
+                set: { appState.startingClick = $0 }
+            ))
+            Text("Clicks once at the starting point so the window beneath receives focus.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: - Reusable Fields

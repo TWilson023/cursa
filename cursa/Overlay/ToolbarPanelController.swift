@@ -4,11 +4,13 @@ import SwiftUI
 final class ToolbarPanelController: NSObject, NSWindowDelegate {
     private var panel: NSPanel?
     private let config: PresetConfiguration
+    private let appState: AppState
     private let onStart: () -> Void
     private let onCancel: () -> Void
 
-    init(config: PresetConfiguration, onStart: @escaping () -> Void, onCancel: @escaping () -> Void) {
+    init(config: PresetConfiguration, appState: AppState, onStart: @escaping () -> Void, onCancel: @escaping () -> Void) {
         self.config = config
+        self.appState = appState
         self.onStart = onStart
         self.onCancel = onCancel
         super.init()
@@ -36,7 +38,7 @@ final class ToolbarPanelController: NSObject, NSWindowDelegate {
         panel.delegate = self
 
         let hostingView = NSHostingView(
-            rootView: ToolbarView(config: config, onStart: onStart, onCancel: onCancel)
+            rootView: ToolbarView(config: config, appState: appState, onStart: onStart, onCancel: onCancel)
         )
         let fittingSize = hostingView.fittingSize
         hostingView.frame = NSRect(origin: .zero, size: fittingSize)

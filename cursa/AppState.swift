@@ -25,6 +25,10 @@ final class AppState {
         didSet { UserDefaults.standard.set(smoothingLevel, forKey: Keys.smoothingLevel) }
     }
 
+    var startingClick: Bool {
+        didSet { UserDefaults.standard.set(startingClick, forKey: Keys.startingClick) }
+    }
+
     var isRecording: Bool { activity == .recording }
     var isPlaying: Bool { activity == .playing }
 
@@ -40,10 +44,12 @@ final class AppState {
             playbackMode = .loop
         }
         smoothingLevel = (defaults.object(forKey: Keys.smoothingLevel) as? Double) ?? 0.0
+        startingClick = (defaults.object(forKey: Keys.startingClick) as? Bool) ?? true
     }
 
     private enum Keys {
         static let playbackMode = "playbackMode"
         static let smoothingLevel = "smoothingLevel"
+        static let startingClick = "startingClick"
     }
 }

@@ -47,6 +47,7 @@ final class MousePlayer {
 
     func playConfiguredPreset(config: PresetConfiguration, appState: AppState) {
         let path: any MousePath
+        let startPoint: CGPoint
         switch config.presetType {
         case .circle:
             path = CirclePath(
@@ -54,18 +55,25 @@ final class MousePlayer {
                 radius: config.radius,
                 duration: config.speed
             )
+            startPoint = CGPoint(x: config.center.x + config.radius, y: config.center.y)
         case .figure8:
             path = Figure8Path(
                 center: config.center,
                 size: config.size,
                 duration: config.speed
             )
+            startPoint = config.center
         case .line:
             path = LinePath(
                 start: config.startPoint,
                 end: config.endPoint,
                 duration: config.speed
             )
+            startPoint = config.startPoint
+        }
+
+        if appState.startingClick {
+            postStartingClick(at: path.points.first?.position ?? startPoint)
         }
 
         startPlayback(path: path, appState: appState)
@@ -221,6 +229,19 @@ final class MousePlayer {
         while clickIndex < cachedClicks.count && cachedClicks[clickIndex].timestamp <= time {
             postClick(cachedClicks[clickIndex])
             clickIndex += 1
+        }
+    }
+
+    private func postStartingClick(at point: CGPoint) {
+        let source = CGEventSource(stateID: .hidSystemState)
+        for type in [CGEventType.leftMouseDown, .leftMouseUp] {
+            guard let event = CGEvent(
+                mouseEventSource: source,
+                mouseType: type,
+                mouseCursorPosition: point,
+                mouseButton: .left
+            ) else { continue }
+            event.post(tap: .cghidEventTap)
         }
     }
 
