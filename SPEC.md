@@ -2,7 +2,9 @@
 
 ## Overview
 
-A lightweight macOS menu bar app that lets you record and replay mouse movements, and run customizable motion presets (circle, figure-8, back-and-forth line). Designed to live in the menu bar and stay out of the way.
+A lightweight macOS menu bar app for **making UI demos with cursor motion that looks designed, not captured**. Record a take, let Cursa smooth out the hand tremor, and loop it seamlessly while you screen-record — the cursor glides, clicks land on their targets, and the menu bar stays out of the shot. Also ships motion presets (circle, figure-8, back-and-forth line) for abstract cursor shots over product visuals.
+
+**Target user:** designers, developers, and marketers shooting product demos, landing-page hero videos, App Store previews, docs GIFs, and Dribbble shots — anything where a cursor is part of the shot. Not a gaming macro tool or a QA automation framework; it's a screen-recording companion.
 
 ## Tech Stack
 
