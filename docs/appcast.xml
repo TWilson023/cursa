@@ -5,5 +5,13 @@
         <link>https://twilson023.github.io/cursa/appcast.xml</link>
         <description>Most recent updates to Cursa.</description>
         <language>en</language>
+        <item>
+            <title>Version 0.1.0</title>
+            <pubDate>Wed, 22 Apr 2026 17:19:15 -0400</pubDate>
+            <sparkle:version>0.1.0</sparkle:version>
+            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.3</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/TWilson023/cursa/releases/download/v0.1.0/Cursa-0.1.0.zip" sparkle:edSignature="VqDeK2TgzyAqvyIMcoeEE0Y4qo1ZOEvhG4EOTl3V0cQEuLaUJwtlP0cRHklu6KjXhOq4gCNP3yfb5//YWhrVBA==" length="1242231" type="application/octet-stream"/>
+        </item>
     </channel>
 </rss>
