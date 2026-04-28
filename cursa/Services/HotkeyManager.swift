@@ -23,9 +23,7 @@ final class HotkeyManager {
         }
     }
 
-    // Defaults: ⌃⌥R, ⌃⌥P, ⌃⌥X
-    var recordHotkey = HotkeyBinding(keyCode: UInt16(kVK_ANSI_R), modifiers: [.control, .option])
-    var playHotkey = HotkeyBinding(keyCode: UInt16(kVK_ANSI_P), modifiers: [.control, .option])
+    // Default: ⌃⌥X
     var stopHotkey = HotkeyBinding(keyCode: UInt16(kVK_ANSI_X), modifiers: [.control, .option])
 
     private init() {
@@ -70,22 +68,8 @@ final class HotkeyManager {
         guard let appState else { return }
         let mods = event.modifierFlags.intersection([.control, .option, .shift, .command])
 
-        if event.keyCode == recordHotkey.keyCode && mods == recordHotkey.modifiers {
-            if appState.isRecording {
-                StatusBarController.shared.stopRecording()
-            } else if appState.activity == .idle && appState.hasAccessibilityPermission {
-                StatusBarController.shared.startCountdown()
-            }
-        } else if event.keyCode == playHotkey.keyCode && mods == playHotkey.modifiers {
+        if event.keyCode == stopHotkey.keyCode && mods == stopHotkey.modifiers {
             if appState.isPlaying {
-                MousePlayer.shared.stop(appState: appState)
-            } else if appState.activity == .idle && appState.hasAccessibilityPermission && appState.hasRecording {
-                MousePlayer.shared.playRecording(appState: appState)
-            }
-        } else if event.keyCode == stopHotkey.keyCode && mods == stopHotkey.modifiers {
-            if appState.isRecording {
-                StatusBarController.shared.stopRecording()
-            } else if appState.isPlaying {
                 MousePlayer.shared.stop(appState: appState)
             }
         }
@@ -93,24 +77,12 @@ final class HotkeyManager {
 
     func saveToDefaults() {
         let defaults = UserDefaults.standard
-        defaults.set(Int(recordHotkey.keyCode), forKey: "hotkey_record_keyCode")
-        defaults.set(Int(recordHotkey.modifiers.rawValue), forKey: "hotkey_record_modifiers")
-        defaults.set(Int(playHotkey.keyCode), forKey: "hotkey_play_keyCode")
-        defaults.set(Int(playHotkey.modifiers.rawValue), forKey: "hotkey_play_modifiers")
         defaults.set(Int(stopHotkey.keyCode), forKey: "hotkey_stop_keyCode")
         defaults.set(Int(stopHotkey.modifiers.rawValue), forKey: "hotkey_stop_modifiers")
     }
 
     private func loadFromDefaults() {
         let defaults = UserDefaults.standard
-        if defaults.object(forKey: "hotkey_record_keyCode") != nil {
-            recordHotkey.keyCode = UInt16(defaults.integer(forKey: "hotkey_record_keyCode"))
-            recordHotkey.modifiers = NSEvent.ModifierFlags(rawValue: UInt(defaults.integer(forKey: "hotkey_record_modifiers")))
-        }
-        if defaults.object(forKey: "hotkey_play_keyCode") != nil {
-            playHotkey.keyCode = UInt16(defaults.integer(forKey: "hotkey_play_keyCode"))
-            playHotkey.modifiers = NSEvent.ModifierFlags(rawValue: UInt(defaults.integer(forKey: "hotkey_play_modifiers")))
-        }
         if defaults.object(forKey: "hotkey_stop_keyCode") != nil {
             stopHotkey.keyCode = UInt16(defaults.integer(forKey: "hotkey_stop_keyCode"))
             stopHotkey.modifiers = NSEvent.ModifierFlags(rawValue: UInt(defaults.integer(forKey: "hotkey_stop_modifiers")))

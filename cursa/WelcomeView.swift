@@ -15,11 +15,11 @@ struct WelcomeView: View {
                 Text("Welcome to Cursa")
                     .font(.largeTitle)
                     .fontWeight(.semibold)
-                Text("Record and replay mouse motion.")
+                Text("Cursor motion presets for screen recordings.")
                     .foregroundStyle(.secondary)
             }
 
-            Text("Cursa watches your cursor while recording and synthesizes mouse events during playback. macOS requires Accessibility permission for both.")
+            Text("Cursa drives the system cursor along configurable paths — Circle, Figure-8, and Line. macOS requires Accessibility permission to synthesize mouse events.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

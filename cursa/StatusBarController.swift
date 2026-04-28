@@ -24,7 +24,6 @@ final class StatusBarController {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.statusItem = statusItem
 
-        // Use button action instead of statusItem.menu so we can intercept clicks
         if let button = statusItem.button {
             button.target = self
             button.action = #selector(statusItemClicked)
@@ -35,26 +34,19 @@ final class StatusBarController {
         rebuildMenu()
         startTracking()
 
-        // Init accessibility + hotkeys. Check trust quietly — the welcome window
-        // handles prompting the user, so we don't want the system alert here.
         appState.hasAccessibilityPermission = AccessibilityChecker.isTrusted()
         HotkeyManager.shared.start(appState: appState)
 
-        // Listen for AX permission changes from System Settings instead of polling.
-        // Distributed notification name `com.apple.accessibility.api` fires whenever
-        // the Accessibility trust database changes.
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("com.apple.accessibility.api"),
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            // The trust check doesn't reflect the new state immediately; defer a tick.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                 self?.refreshAccessibilityState()
             }
         }
 
-        // Also re-check when the app becomes active, in case we missed a change.
         NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification,
             object: nil,
@@ -93,8 +85,6 @@ final class StatusBarController {
         withObservationTracking {
             _ = appState.activity
             _ = appState.hasAccessibilityPermission
-            _ = appState.hasRecording
-            _ = appState.playbackMode
         } onChange: { [weak self] in
             DispatchQueue.main.async {
                 self?.updateButton()
@@ -105,20 +95,12 @@ final class StatusBarController {
     }
 
     private func updateButton() {
-        guard let button = statusItem?.button, let appState else { return }
-
-        if appState.isRecording {
-            button.image = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: "Stop Recording")
-            let hotkey = HotkeyManager.shared.recordHotkey.displayString
-            button.title = " \(hotkey)"
-            button.imagePosition = .imageLeading
-        } else {
-            let icon = NSImage(named: "MenuBarIcon")
-            icon?.isTemplate = true
-            button.image = icon
-            button.title = ""
-            button.imagePosition = .imageOnly
-        }
+        guard let button = statusItem?.button else { return }
+        let icon = NSImage(named: "MenuBarIcon")
+        icon?.isTemplate = true
+        button.image = icon
+        button.title = ""
+        button.imagePosition = .imageOnly
     }
 
     private func rebuildMenu() {
@@ -133,51 +115,6 @@ final class StatusBarController {
             menu.addItem(permItem)
             menu.addItem(.separator())
         }
-
-        // Record
-        let recordTitle: String
-        let recordHotkey = HotkeyManager.shared.recordHotkey
-        if appState.isRecording {
-            recordTitle = "Stop Recording"
-        } else {
-            recordTitle = "Record"
-        }
-        let recordItem = NSMenuItem(title: recordTitle, action: #selector(toggleRecord), keyEquivalent: "")
-        recordItem.target = self
-        recordItem.isEnabled = enabled && !appState.isPlaying
-        // Show hotkey as the shortcut display
-        if let (key, mods) = keyEquivalent(for: recordHotkey) {
-            recordItem.keyEquivalent = key
-            recordItem.keyEquivalentModifierMask = mods
-        }
-        menu.addItem(recordItem)
-
-        // Play
-        let playTitle = appState.isPlaying ? "Stop Playback" : "Play Recording"
-        let playItem = NSMenuItem(title: playTitle, action: #selector(togglePlay), keyEquivalent: "")
-        playItem.target = self
-        playItem.isEnabled = enabled && !appState.isRecording && (appState.isPlaying || appState.hasRecording)
-        let playHotkey = HotkeyManager.shared.playHotkey
-        if let (key, mods) = keyEquivalent(for: playHotkey) {
-            playItem.keyEquivalent = key
-            playItem.keyEquivalentModifierMask = mods
-        }
-        menu.addItem(playItem)
-
-        // Recording loop mode submenu
-        let loopMenu = NSMenu()
-        for mode in PlaybackMode.allCases {
-            let item = NSMenuItem(title: mode.rawValue, action: #selector(setLoopMode(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = mode.rawValue
-            item.state = appState.playbackMode == mode ? .on : .off
-            loopMenu.addItem(item)
-        }
-        let loopItem = NSMenuItem(title: "Recording Loop Mode", action: nil, keyEquivalent: "")
-        loopItem.submenu = loopMenu
-        menu.addItem(loopItem)
-
-        menu.addItem(.separator())
 
         // Presets
         let circleItem = NSMenuItem(title: "Circle", action: #selector(presetCircle), keyEquivalent: "")
@@ -194,6 +131,18 @@ final class StatusBarController {
         lineItem.target = self
         lineItem.isEnabled = enabled && appState.activity == .idle
         menu.addItem(lineItem)
+
+        if appState.isPlaying {
+            menu.addItem(.separator())
+            let stopItem = NSMenuItem(title: "Stop Playback", action: #selector(stopPlayback), keyEquivalent: "")
+            stopItem.target = self
+            let stopHotkey = HotkeyManager.shared.stopHotkey
+            if let (key, mods) = keyEquivalent(for: stopHotkey) {
+                stopItem.keyEquivalent = key
+                stopItem.keyEquivalentModifierMask = mods
+            }
+            menu.addItem(stopItem)
+        }
 
         menu.addItem(.separator())
 
@@ -216,17 +165,9 @@ final class StatusBarController {
     private var currentMenu: NSMenu?
 
     @objc private func statusItemClicked() {
-        // If recording, stop it before showing the menu
-        if let appState, appState.isRecording {
-            stopRecording()
-            rebuildMenu()
-        }
-
-        // Show the menu programmatically
         guard let button = statusItem?.button, let menu = currentMenu else { return }
         statusItem?.menu = menu
         button.performClick(nil)
-        // Clear menu so future clicks go through our action handler again
         DispatchQueue.main.async { [weak self] in
             self?.statusItem?.menu = nil
         }
@@ -238,67 +179,9 @@ final class StatusBarController {
         showWelcomeIfNeeded()
     }
 
-    private var countdownTimer: Timer?
-
-    @objc private func toggleRecord() {
+    @objc private func stopPlayback() {
         guard let appState else { return }
-        if appState.isRecording {
-            stopRecording()
-        } else if appState.activity == .idle {
-            startCountdown()
-        }
-    }
-
-    func stopRecording() {
-        guard let appState else { return }
-        let recording = MouseRecorder.shared.stopRecording()
-        appState.activity = .idle
-        if let recording {
-            appState.hasRecording = true
-            MousePlayer.shared.setRecording(recording)
-        }
-        updateButton()
-    }
-
-    func startCountdown() {
-        guard let appState, appState.activity == .idle else { return }
-        guard let button = statusItem?.button else { return }
-
-        // Cancel any existing countdown
-        countdownTimer?.invalidate()
-
-        var remaining = 3
-        button.image = nil
-        button.title = "\(remaining)"
-        button.imagePosition = .noImage
-
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-            remaining -= 1
-            if remaining > 0 {
-                button.title = "\(remaining)"
-            } else {
-                timer.invalidate()
-                self?.countdownTimer = nil
-                MouseRecorder.shared.startRecording(appState: appState)
-                self?.updateButton()
-                self?.rebuildMenu()
-            }
-        }
-    }
-
-    func cancelCountdown() {
-        countdownTimer?.invalidate()
-        countdownTimer = nil
-        updateButton()
-    }
-
-    @objc private func togglePlay() {
-        guard let appState else { return }
-        if appState.isPlaying {
-            MousePlayer.shared.stop(appState: appState)
-        } else {
-            MousePlayer.shared.playRecording(appState: appState)
-        }
+        MousePlayer.shared.stop(appState: appState)
     }
 
     @objc private func presetCircle() {
@@ -314,12 +197,6 @@ final class StatusBarController {
     @objc private func presetLine() {
         guard let appState else { return }
         OverlayCoordinator.shared.beginConfiguration(for: .line, appState: appState)
-    }
-
-    @objc private func setLoopMode(_ sender: NSMenuItem) {
-        guard let rawValue = sender.representedObject as? String,
-              let mode = PlaybackMode(rawValue: rawValue) else { return }
-        appState?.playbackMode = mode
     }
 
     @objc private func openSettings() {
@@ -364,8 +241,6 @@ final class StatusBarController {
 }
 
 private func keyCharForKeyCode(_ keyCode: UInt16) -> String {
-    // Convert key code to lowercase character for NSMenuItem.keyEquivalent
-    // Uses TISCopyCurrentKeyboardInputSource for accurate mapping
     if let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue(),
        let layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) {
         let data = unsafeBitCast(layoutData, to: CFData.self) as Data
@@ -378,7 +253,7 @@ private func keyCharForKeyCode(_ keyCode: UInt16) -> String {
                 layoutPtr,
                 keyCode,
                 UInt16(kUCKeyActionDisplay),
-                0, // no modifiers
+                0,
                 UInt32(LMGetKbdType()),
                 UInt32(kUCKeyTranslateNoDeadKeysBit),
                 &deadKeyState,
@@ -393,7 +268,6 @@ private func keyCharForKeyCode(_ keyCode: UInt16) -> String {
         }
     }
 
-    // Fallback: hardcoded mapping
     let mapping: [UInt16: String] = [
         0: "a", 1: "s", 2: "d", 3: "f", 4: "h", 5: "g", 6: "z", 7: "x",
         8: "c", 9: "v", 11: "b", 12: "q", 13: "w", 14: "e", 15: "r",

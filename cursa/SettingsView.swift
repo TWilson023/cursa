@@ -4,65 +4,24 @@ struct SettingsView: View {
     @Bindable var appState: AppState
 
     var body: some View {
-        TabView {
-            Tab("Hotkeys", systemImage: "keyboard") {
-                HotkeysTab()
-            }
-            Tab("Playback", systemImage: "play.circle") {
-                playbackTab
-            }
-        }
-        .frame(minWidth: 400, minHeight: 300)
-        .padding()
-    }
-
-    // MARK: - Playback Tab
-
-    private var playbackTab: some View {
         Form {
-            Section("Smoothing") {
-                HStack {
-                    Text("Level")
-                    Slider(value: $appState.smoothingLevel, in: 0...1, step: 0.05)
-                    Text("\(Int(appState.smoothingLevel * 100))%")
-                        .monospacedDigit()
-                        .frame(width: 40, alignment: .trailing)
-                }
-                Text("Reduces jitter in recorded paths. Click positions are always preserved.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Loop Mode") {
-                Picker("Mode", selection: $appState.playbackMode) {
-                    ForEach(PlaybackMode.allCases, id: \.self) { mode in
-                        Text(mode.rawValue).tag(mode)
-                    }
-                }
-                .pickerStyle(.radioGroup)
+            Section("Global Hotkeys") {
+                HotkeyRow(label: "Stop Playback", keyPath: \.stopHotkey)
             }
         }
         .formStyle(.grouped)
+        .frame(minWidth: 400, minHeight: 200)
+        .padding()
     }
 }
 
-// MARK: - Hotkeys Tab
+private struct HotkeyRow: View {
+    let label: String
+    let keyPath: ReferenceWritableKeyPath<HotkeyManager, HotkeyManager.HotkeyBinding>
 
-private struct HotkeysTab: View {
     private let hotkeys = HotkeyManager.shared
 
     var body: some View {
-        Form {
-            Section("Global Hotkeys") {
-                row("Record Start/Stop", keyPath: \.recordHotkey)
-                row("Play Start/Stop", keyPath: \.playHotkey)
-                row("Stop All", keyPath: \.stopHotkey)
-            }
-        }
-        .formStyle(.grouped)
-    }
-
-    private func row(_ label: String, keyPath: ReferenceWritableKeyPath<HotkeyManager, HotkeyManager.HotkeyBinding>) -> some View {
         HStack {
             Text(label)
             Spacer()
