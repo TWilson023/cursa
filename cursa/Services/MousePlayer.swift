@@ -17,7 +17,10 @@ final class MousePlayer {
 
     private var lastPostedPosition: CGPoint?
     private var tickCount: Int = 0
-    private let autoCancelThreshold: Double = 5.0
+    private var deviationStreak: Int = 0
+    private let autoCancelThreshold: Double = 8.0
+    private let autoCancelGraceTicks: Int = 15
+    private let autoCancelStreakRequired: Int = 3
 
     private init() {}
 
@@ -48,8 +51,11 @@ final class MousePlayer {
             startPoint = config.startPoint
         }
 
+        let firstPoint = path.points.first?.position ?? startPoint
         if appState.startingClick {
-            postStartingClick(at: path.points.first?.position ?? startPoint)
+            postStartingClick(at: firstPoint)
+        } else {
+            moveMouse(to: firstPoint)
         }
 
         startPlayback(path: path, appState: appState)
@@ -72,6 +78,7 @@ final class MousePlayer {
         playbackStart = ProcessInfo.processInfo.systemUptime
         lastPostedPosition = nil
         tickCount = 0
+        deviationStreak = 0
         appState.activity = .playing
 
         let timer = DispatchSource.makeTimerSource(queue: .main)
@@ -91,13 +98,18 @@ final class MousePlayer {
 
         tickCount += 1
 
-        if tickCount > 3, let expected = lastPostedPosition {
+        if tickCount > autoCancelGraceTicks, let expected = lastPostedPosition {
             let actual = CGEvent(source: nil)?.location ?? expected
             let dx = actual.x - expected.x
             let dy = actual.y - expected.y
             if sqrt(dx * dx + dy * dy) > autoCancelThreshold {
-                stop(appState: appState)
-                return
+                deviationStreak += 1
+                if deviationStreak >= autoCancelStreakRequired {
+                    stop(appState: appState)
+                    return
+                }
+            } else {
+                deviationStreak = 0
             }
         }
 
@@ -154,6 +166,19 @@ final class MousePlayer {
 
     private func postStartingClick(at point: CGPoint) {
         let source = CGEventSource(stateID: .hidSystemState)
+
+        // Move cursor to the click location first; some apps ignore clicks that
+        // arrive without a preceding hover at that position.
+        if let move = CGEvent(
+            mouseEventSource: source,
+            mouseType: .mouseMoved,
+            mouseCursorPosition: point,
+            mouseButton: .left
+        ) {
+            move.post(tap: .cghidEventTap)
+        }
+        Thread.sleep(forTimeInterval: 0.02)
+
         for type in [CGEventType.leftMouseDown, .leftMouseUp] {
             guard let event = CGEvent(
                 mouseEventSource: source,
@@ -161,7 +186,9 @@ final class MousePlayer {
                 mouseCursorPosition: point,
                 mouseButton: .left
             ) else { continue }
+            event.setIntegerValueField(.mouseEventClickState, value: 1)
             event.post(tap: .cghidEventTap)
+            Thread.sleep(forTimeInterval: 0.02)
         }
     }
 
