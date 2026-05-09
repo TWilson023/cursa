@@ -166,19 +166,6 @@ final class MousePlayer {
 
     private func postStartingClick(at point: CGPoint) {
         let source = CGEventSource(stateID: .hidSystemState)
-
-        // Move cursor to the click location first; some apps ignore clicks that
-        // arrive without a preceding hover at that position.
-        if let move = CGEvent(
-            mouseEventSource: source,
-            mouseType: .mouseMoved,
-            mouseCursorPosition: point,
-            mouseButton: .left
-        ) {
-            move.post(tap: .cghidEventTap)
-        }
-        Thread.sleep(forTimeInterval: 0.02)
-
         for type in [CGEventType.leftMouseDown, .leftMouseUp] {
             guard let event = CGEvent(
                 mouseEventSource: source,
@@ -186,9 +173,7 @@ final class MousePlayer {
                 mouseCursorPosition: point,
                 mouseButton: .left
             ) else { continue }
-            event.setIntegerValueField(.mouseEventClickState, value: 1)
             event.post(tap: .cghidEventTap)
-            Thread.sleep(forTimeInterval: 0.02)
         }
     }
 

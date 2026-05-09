@@ -46,7 +46,14 @@ final class OverlayCoordinator {
         guard let config else { return }
         dismiss()
         appState.activity = .idle
-        MousePlayer.shared.playConfiguredPreset(config: config, appState: appState)
+        // Defer playback so the overlay/toolbar windows are fully off-screen
+        // and Cursa has yielded frontmost status before the starting click
+        // fires. Without this, the synthetic click races the dismiss and the
+        // target app gets activated only momentarily before Cursa's still-
+        // tearing-down panel reclaims focus.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            MousePlayer.shared.playConfiguredPreset(config: config, appState: appState)
+        }
     }
 
     func cancelConfiguration(appState: AppState) {
