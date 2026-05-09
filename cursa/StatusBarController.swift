@@ -71,7 +71,6 @@ final class StatusBarController {
         guard let appState else { return }
         let hasSeen = UserDefaults.standard.bool(forKey: Keys.hasSeenWelcome)
         guard !hasSeen || !appState.hasAccessibilityPermission else { return }
-        guard !welcomeController.isVisible else { return }
 
         welcomeController.show(appState: appState) {
             if appState.hasAccessibilityPermission {

@@ -6,8 +6,9 @@ struct CursaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        // Settings window is managed by StatusBarController via AppKit
-        // This empty WindowGroup is needed to satisfy the App protocol
+        // Settings window is managed by StatusBarController via AppKit.
+        // This empty WindowGroup is needed to satisfy the App protocol;
+        // `.defaultLaunchBehavior(.suppressed)` keeps it from auto-showing.
         WindowGroup {
             EmptyView()
                 .frame(width: 0, height: 0)
