@@ -45,5 +45,13 @@
             <sparkle:minimumSystemVersion>26.3</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/TWilson023/cursa/releases/download/v0.2.3/Cursa-0.2.3.zip" sparkle:edSignature="c6TtOnbI+3gmYrKA7c5e7J1WI16Tl3NzuYyUZuzqTJG/Bx+kuE1dkcTWY5hiNnT3209/s/c50WVBYC+pcIpaAA==" length="1262134" type="application/octet-stream"/>
         </item>
+        <item>
+            <title>Version 0.2.4</title>
+            <pubDate>Fri, 08 May 2026 21:47:47 -0400</pubDate>
+            <sparkle:version>0.2.4</sparkle:version>
+            <sparkle:shortVersionString>0.2.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/TWilson023/cursa/releases/download/v0.2.4/Cursa-0.2.4.zip" sparkle:edSignature="WiT8wZoKc1yok2lXSzLNcEsS5FcOerC+ADCkeWN06WwK2UyGzWrmGr17nuhT650mZ9obkV5Yr+M0qhTno9QtBQ==" length="2977129" type="application/octet-stream"/>
+        </item>
     </channel>
 </rss>
