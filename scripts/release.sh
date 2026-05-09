@@ -159,7 +159,9 @@ p.write_text(text)
 PY
 
 echo "==> Creating GitHub release"
-gh release create "v$VERSION" "$ZIP_PATH" \
+LATEST_ZIP="$BUILD_DIR/Cursa.zip"
+cp "$ZIP_PATH" "$LATEST_ZIP"
+gh release create "v$VERSION" "$ZIP_PATH" "$LATEST_ZIP" \
     --repo "$GH_REPO" \
     --title "Cursa $VERSION" \
     --notes "Release $VERSION"
