@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 
 struct LinePath: MousePath {
     let start: CGPoint
@@ -10,8 +11,11 @@ struct LinePath: MousePath {
         let stepCount = max(Int(duration * 60), 60)
         return (0...stepCount).map { i in
             let t = Double(i) / Double(stepCount)
-            let x = start.x + (end.x - start.x) * t
-            let y = start.y + (end.y - start.y) * t
+            // Cosine ease: goes start → end → start over the full duration,
+            // with smooth turnarounds at the endpoints and seamless looping.
+            let progress = (1 - cos(2 * .pi * t)) / 2
+            let x = start.x + (end.x - start.x) * progress
+            let y = start.y + (end.y - start.y) * progress
             return MousePoint(
                 timestamp: t * duration,
                 position: CGPoint(x: x, y: y)
